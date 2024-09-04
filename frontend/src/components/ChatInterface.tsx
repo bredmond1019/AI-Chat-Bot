@@ -3,12 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Message from './Message';
 import WebSocketService from '../services/websocket';
-
-interface ChatMessage {
-  // id: string;
-  content: string;
-  sender: 'user' | 'bot';
-}
+import { ChatMessage } from '../types/ChatMessage';
 
 const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -16,18 +11,39 @@ const ChatInterface: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const webSocketRef = useRef<WebSocketService | null>(null);
 
+  const updateMessages = (prevMessages: ChatMessage[], chatMessage: ChatMessage) => {
+    const lastMessage = prevMessages[prevMessages.length - 1];
+    if (lastMessage && !lastMessage.isComplete) {
+      // Append to the existing incomplete message
+      const updatedMessages = [...prevMessages];
+
+      updatedMessages[updatedMessages.length - 1] = {
+        ...lastMessage,
+        content: lastMessage.content + chatMessage.content,
+        isComplete: chatMessage.isComplete,
+      };
+      return updatedMessages;
+    } else {
+      // Start a new message
+      return [...prevMessages, chatMessage];
+    }
+  };
+
   useEffect(() => {
-    // Initialize WebSocket connection
     webSocketRef.current = new WebSocketService('ws://localhost:8080/ws');
     webSocketRef.current.connect();
 
-    // Set up message listener
-    webSocketRef.current.onMessage((message) => {
-      const newMessage: ChatMessage = {
-        content: message.content,
-        sender: message.sender,
-      };
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
+    webSocketRef.current.onMessage((receivedMessage) => {
+      if (receivedMessage.type === 'ai_message') {
+        const chatMessage: ChatMessage = {
+          content: receivedMessage.message.content,
+          sender: 'AI',
+          isComplete: receivedMessage.message.isComplete,
+        };
+        setMessages((prevMessages) => {
+          return updateMessages(prevMessages, chatMessage);
+        });
+      }
     });
 
     return () => {
@@ -46,15 +62,12 @@ const ChatInterface: React.FC = () => {
       const newMessage: ChatMessage = {
         content: input.trim(),
         sender: 'user',
+        isComplete: true,
       };
       setMessages([...messages, newMessage]);
       
-      // Send message to WebSocket
       if (webSocketRef.current) {
-        webSocketRef.current.sendMessage({
-          msg: input.trim(),
-          id: webSocketRef.current.getSessionId(),
-        });
+        webSocketRef.current.sendMessage(newMessage);
       }
 
       setInput('');

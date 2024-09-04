@@ -1,3 +1,4 @@
+use futures::stream::Stream;
 use log::{error, info};
 use ollama_rs::{
     generation::chat::{request::ChatMessageRequest, ChatMessage, ChatMessageResponseStream},
@@ -5,6 +6,7 @@ use ollama_rs::{
 };
 use std::error::Error as StdError;
 use std::fmt;
+use std::pin::Pin;
 use tokio_stream::StreamExt;
 
 #[derive(Clone)]
@@ -23,9 +25,12 @@ impl AIModel {
     pub async fn generate_response(
         &mut self,
         input: String,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<
+        Pin<Box<dyn Stream<Item = Result<String, Box<dyn std::error::Error>>> + Send>>,
+        Box<dyn std::error::Error>,
+    > {
         info!("Generating AI response for input: {}", input);
-        let mut stream: ChatMessageResponseStream = self
+        let stream: ChatMessageResponseStream = self
             .ollama
             .send_chat_messages_with_history_stream(
                 ChatMessageRequest::new(
@@ -41,35 +46,22 @@ impl AIModel {
             })?;
 
         info!("Successfully initiated chat message stream");
-        let mut response = String::new();
-        while let Some(res) = stream.next().await {
-            match res {
-                Ok(chunk) => {
-                    if let Some(assistant_message) = chunk.message {
-                        response += assistant_message.content.as_str();
-                        info!(
-                            "Received chunk of AI response, current length: {}",
-                            response.len()
-                        );
-                    }
-                }
-                Err(e) => {
-                    error!("Error while streaming response: {:?}", e);
-                    return Err(Box::new(AIModelError::StreamingError(format!("{:?}", e))));
+
+        Ok(Box::pin(stream.map(|res| match res {
+            Ok(chunk) => {
+                if let Some(assistant_message) = chunk.message {
+                    info!("Received chunk of AI response");
+                    Ok(assistant_message.content)
+                } else {
+                    Ok(String::new())
                 }
             }
-        }
-
-        if response.is_empty() {
-            error!("Generated empty response for input: {}", input);
-            Err(Box::new(AIModelError::EmptyResponse))
-        } else {
-            info!(
-                "Successfully generated AI response of length {}",
-                response.len()
-            );
-            Ok(response)
-        }
+            Err(e) => {
+                error!("Error while streaming response: {:?}", e);
+                Err(Box::new(AIModelError::StreamingError(format!("{:?}", e)))
+                    as Box<dyn std::error::Error>)
+            }
+        })))
     }
 }
 

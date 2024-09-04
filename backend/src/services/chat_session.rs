@@ -72,12 +72,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChatSession {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Text(text)) => {
-                info!("Received text message from client: {:?}", self.id);
                 let msg = text.trim();
                 if !msg.is_empty() {
                     match serde_json::from_str::<ClientMessage>(msg) {
                         Ok(client_message) => {
-                            info!("Deserialized ClientMessage successfully: {:?}", self.id);
                             self.addr.do_send(client_message);
                         }
                         Err(e) => {
@@ -109,16 +107,10 @@ impl Handler<Message> for ChatSession {
     type Result = ();
 
     fn handle(&mut self, msg: Message, ctx: &mut Self::Context) {
-        info!("Handling Message for session: {:?}", self.id);
-        match serde_json::to_string(&msg) {
-            Ok(json) => {
-                info!("Sending serialized Message to client: {:?}", self.id);
-                ctx.text(json)
-            }
-            Err(e) => {
-                error!("Error serializing Message: {:?}", e);
-                ctx.text(format!("Error: Failed to process message - {}", e));
-            }
-        }
+        let ai_message = serde_json::json!({
+            "type": "ai_message",
+            "message": msg,
+        });
+        ctx.text(ai_message.to_string());
     }
 }

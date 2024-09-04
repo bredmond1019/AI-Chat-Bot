@@ -5,11 +5,14 @@ use serde::{Deserialize, Serialize};
 #[rtype(result = "()")]
 pub struct Message {
     pub content: String,
-    pub sender: String,
+    pub is_complete: bool,
 }
 
 impl Message {
-    pub fn new(content: String, sender: String) -> Self {
-        Self { content, sender }
+    pub fn new(content: String, is_complete: bool) -> Self {
+        Self {
+            content,
+            is_complete,
+        }
     }
 }
