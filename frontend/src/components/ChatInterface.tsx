@@ -1,6 +1,8 @@
+// File: frontend/src/components/ChatInterface.tsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import Message from './Message';
-// import { connectWebSocket } from '../services/websocket';
+import WebSocketService from '../services/websocket';
 
 interface ChatMessage {
   id: string;
@@ -12,11 +14,28 @@ const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const webSocketRef = useRef<WebSocketService | null>(null);
 
   useEffect(() => {
-    // TODO: Implement WebSocket connection
-    // const socket = connectWebSocket();
-    // return () => socket.close();
+    // Initialize WebSocket connection
+    webSocketRef.current = new WebSocketService('ws://localhost:8080/ws');
+    webSocketRef.current.connect();
+
+    // Set up message listener
+    webSocketRef.current.onMessage((message) => {
+      const newMessage: ChatMessage = {
+        id: Date.now().toString(),
+        text: message.text,
+        sender: 'bot',
+      };
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+    });
+
+    return () => {
+      if (webSocketRef.current) {
+        webSocketRef.current.disconnect();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -31,8 +50,13 @@ const ChatInterface: React.FC = () => {
         sender: 'user',
       };
       setMessages([...messages, newMessage]);
+      
+      // Send message to WebSocket
+      if (webSocketRef.current) {
+        webSocketRef.current.sendMessage({ text: input.trim() });
+      }
+
       setInput('');
-      // TODO: Send message to WebSocket
     }
   };
 

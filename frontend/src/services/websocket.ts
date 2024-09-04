@@ -1,18 +1,25 @@
+// File: frontend/src/services/websocket.ts
+
 class WebSocketService {
   private socket: WebSocket | null = null;
-  private messageCallback: ((message: string) => void) | null = null;
+  private messageCallbacks: ((message: any) => void)[] = [];
+  private reconnectInterval: number = 5000; // 5 seconds
+  private url: string;
 
-  connect(url: string): void {
-    this.socket = new WebSocket(url);
+  constructor(url: string) {
+    this.url = url;
+  }
+
+  connect(): void {
+    this.socket = new WebSocket(this.url);
 
     this.socket.onopen = () => {
       console.log('WebSocket connection established');
     };
 
     this.socket.onmessage = (event) => {
-      if (this.messageCallback) {
-        this.messageCallback(event.data);
-      }
+      const message = JSON.parse(event.data);
+      this.messageCallbacks.forEach(callback => callback(message));
     };
 
     this.socket.onerror = (error) => {
@@ -20,20 +27,21 @@ class WebSocketService {
     };
 
     this.socket.onclose = () => {
-      console.log('WebSocket connection closed');
+      console.log('WebSocket connection closed. Attempting to reconnect...');
+      setTimeout(() => this.connect(), this.reconnectInterval);
     };
   }
 
-  sendMessage(message: string): void {
+  sendMessage(message: any): void {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(message);
+      this.socket.send(JSON.stringify(message));
     } else {
       console.error('WebSocket is not connected');
     }
   }
 
-  onMessage(callback: (message: string) => void): void {
-    this.messageCallback = callback;
+  onMessage(callback: (message: any) => void): void {
+    this.messageCallbacks.push(callback);
   }
 
   disconnect(): void {
@@ -44,5 +52,4 @@ class WebSocketService {
   }
 }
 
-const websocketService = new WebSocketService();
-export default websocketService;
+export default WebSocketService;
