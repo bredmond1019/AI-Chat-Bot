@@ -2,8 +2,10 @@ use ollama_rs::{
     generation::chat::{request::ChatMessageRequest, ChatMessage, ChatMessageResponseStream},
     Ollama,
 };
+
 use tokio_stream::StreamExt;
 
+#[derive(Clone)]
 pub struct AIModel {
     ollama: Ollama,
 }
@@ -16,7 +18,7 @@ impl AIModel {
     }
 
     pub async fn generate_response(
-        &self,
+        &mut self,
         input: String,
     ) -> Result<String, Box<dyn std::error::Error>> {
         let mut stream: ChatMessageResponseStream = self

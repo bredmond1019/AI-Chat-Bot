@@ -1,3 +1,3 @@
-mod ai_model;
-mod chat_server;
-mod chat_session;
+pub mod ai_model;
+pub mod chat_server;
+pub mod chat_session;

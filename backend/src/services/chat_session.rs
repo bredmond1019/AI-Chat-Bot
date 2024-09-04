@@ -1,5 +1,6 @@
 use crate::models::message::Message;
 use crate::services::chat_server::{ChatServer, ClientMessage, Connect, Disconnect};
+use actix::prelude::*;
 use actix::{Actor, ActorContext, AsyncContext, Handler, StreamHandler};
 use actix_web_actors::ws;
 use uuid::Uuid;
@@ -29,12 +30,12 @@ impl Actor for ChatSession {
                 id: self.id,
             })
             .into_actor(self)
-            .then(|res, _, ctx| {
+            .then(|res, act, ctx| {
                 if let Err(e) = res {
                     eprintln!("Error connecting: {}", e);
                     ctx.stop();
                 }
-                actix::fut::ready(())
+                fut::ready(())
             })
             .wait(ctx);
     }

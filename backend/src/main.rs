@@ -1,3 +1,4 @@
+use actix::Actor;
 use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
 use std::env;

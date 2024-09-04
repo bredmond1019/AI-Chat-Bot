@@ -59,15 +59,20 @@ impl Handler<Disconnect> for ChatServer {
 }
 
 impl Handler<ClientMessage> for ChatServer {
-    type Result = ();
+    type Result = ResponseFuture<()>;
 
-    fn handle(&mut self, msg: ClientMessage, ctx: &mut Context<Self>) {
-        let ai_response = self.ai_model.generate_response(msg.msg.clone());
-        if let Ok(response) = ai_response {
-            let ai_message = Message::new(response, "AI".to_string());
-            if let Some(addr) = self.sessions.get(&msg.id) {
-                addr.do_send(ai_message);
+    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
+        let mut ai_model = self.ai_model.clone();
+        let sessions = self.sessions.clone();
+        let id = msg.id;
+
+        Box::pin(async move {
+            if let Ok(response) = ai_model.generate_response(msg.msg).await {
+                let ai_message = Message::new(response, "AI".to_string());
+                if let Some(addr) = sessions.get(&id) {
+                    addr.do_send(ai_message);
+                }
             }
-        }
+        })
     }
 }
