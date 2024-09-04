@@ -59,28 +59,30 @@ fi
 if ! dir_exists "backend"; then
     cargo new backend
     cd backend
-    cargo add actix-web tokio serde serde_json reqwest dotenv
+    cargo add actix actix-web actix-cors actix-web-actors tokio serde serde_json uuid chrono dotenv env_logger log futures tokio-stream
+    # Note: ollama-rs is not available on crates.io, so it needs to be added manually to Cargo.toml
+    echo 'ollama-rs = { path = "../../ollama-rs", features = ["stream", "chat-history"] }' >> Cargo.toml
     cd ..
 else
     echo "Backend already exists, skipping creation."
 fi
 
 # Create project structure if directories don't exist
-for dir in frontend/src/{components,pages,services} backend/src/{routes,models,services,db}; do
+for dir in frontend/src/{components,pages,services,types} backend/src/{routes,models,services}; do
     if ! dir_exists "$dir"; then
         mkdir -p "$dir"
     fi
 done
 
 # Create frontend files if they don't exist
-for file in frontend/src/{components/{ChatInterface.tsx,Message.tsx},pages/ChatPage.tsx,services/websocket.ts}; do
+for file in frontend/src/{components/{ChatInterface.tsx,Message.tsx},pages/ChatPage.tsx,services/websocket.ts,types/ChatMessage.ts}; do
     if ! file_exists "$file"; then
         touch "$file"
     fi
 done
 
 # Create backend files if they don't exist
-for file in backend/src/{main.rs,routes/chat.rs,models/message.rs,services/{ai_model.rs,api_integration.rs},db/connection.rs}; do
+for file in backend/src/{main.rs,routes/ws.rs,models/message.rs,services/{chat_server.rs,chat_session.rs,ai_model.rs}}; do
     if ! file_exists "$file"; then
         touch "$file"
     fi
@@ -88,8 +90,8 @@ done
 
 # Create .env file if it doesn't exist
 if ! file_exists "backend/.env"; then
-    echo "DATABASE_URL=postgres://username:password@localhost/dbname" > backend/.env
-    echo "API_KEY=your_api_key_here" >> backend/.env
+    echo "RUST_LOG=debug" > backend/.env
+    echo "RUST_BACKTRACE=1" >> backend/.env
 fi
 
 echo "Project structure updated successfully!"
