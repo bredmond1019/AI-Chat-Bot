@@ -1,7 +1,7 @@
 use actix::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Message, Serialize, Deserialize)]
+#[derive(Message, Serialize, Deserialize, Debug, Clone)]
 #[rtype(result = "()")]
 pub struct Message {
     pub content: String,

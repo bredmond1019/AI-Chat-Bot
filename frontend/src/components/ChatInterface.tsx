@@ -5,8 +5,8 @@ import Message from './Message';
 import WebSocketService from '../services/websocket';
 
 interface ChatMessage {
-  id: string;
-  text: string;
+  // id: string;
+  content: string;
   sender: 'user' | 'bot';
 }
 
@@ -24,9 +24,8 @@ const ChatInterface: React.FC = () => {
     // Set up message listener
     webSocketRef.current.onMessage((message) => {
       const newMessage: ChatMessage = {
-        id: Date.now().toString(),
-        text: message.text,
-        sender: 'bot',
+        content: message.content,
+        sender: message.sender,
       };
       setMessages((prevMessages) => [...prevMessages, newMessage]);
     });
@@ -45,15 +44,17 @@ const ChatInterface: React.FC = () => {
   const handleSend = () => {
     if (input.trim()) {
       const newMessage: ChatMessage = {
-        id: Date.now().toString(),
-        text: input.trim(),
+        content: input.trim(),
         sender: 'user',
       };
       setMessages([...messages, newMessage]);
       
       // Send message to WebSocket
       if (webSocketRef.current) {
-        webSocketRef.current.sendMessage({ text: input.trim() });
+        webSocketRef.current.sendMessage({
+          msg: input.trim(),
+          id: webSocketRef.current.getSessionId(),
+        });
       }
 
       setInput('');
@@ -63,8 +64,8 @@ const ChatInterface: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-gray-800">
       <div className="flex-grow overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <Message key={message.id} message={message} />
+        {messages.map((message, index) => (
+          <Message key={index} message={message} />
         ))}
         <div ref={messagesEndRef} />
       </div>

@@ -5,6 +5,7 @@ class WebSocketService {
   private messageCallbacks: ((message: any) => void)[] = [];
   private reconnectInterval: number = 5000; // 5 seconds
   private url: string;
+  private sessionId: string | null = null;
 
   constructor(url: string) {
     this.url = url;
@@ -18,8 +19,13 @@ class WebSocketService {
     };
 
     this.socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      this.messageCallbacks.forEach(callback => callback(message));
+      const data = JSON.parse(event.data);
+      if (data.type === 'chat_session_started') {
+        this.sessionId = data.session_id;
+        console.log('Chat session started with ID:', this.sessionId);
+      } else {
+        this.messageCallbacks.forEach(callback => callback(data));
+      }
     };
 
     this.socket.onerror = (error) => {
@@ -34,7 +40,11 @@ class WebSocketService {
 
   sendMessage(message: any): void {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(message));
+      const fullMessage = {
+        ...message,
+        id: this.sessionId,
+      };
+      this.socket.send(JSON.stringify(fullMessage));
     } else {
       console.error('WebSocket is not connected');
     }
@@ -49,6 +59,10 @@ class WebSocketService {
       this.socket.close();
       this.socket = null;
     }
+  }
+
+  getSessionId(): string | null {
+    return this.sessionId;
   }
 }
 
