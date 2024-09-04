@@ -11,36 +11,6 @@ This project is an AI-powered chat bot application built with a Rust backend and
 - React TypeScript frontend for a responsive UI
 - Tailwind CSS for styling
 
-## Project Structure
-
-ai-chatbot/
-├── backend/
-│ ├── src/
-│ │ ├── main.rs
-│ │ ├── routes/
-│ │ │ └── ws.rs
-│ │ ├── models/
-│ │ │ └── message.rs
-│ │ └── services/
-│ │ ├── chat_server.rs
-│ │ ├── chat_session.rs
-│ │ └── ai_model.rs
-│ ├── Cargo.toml
-│ └── .env
-└── frontend/
-├── src/
-│ ├── components/
-│ │ ├── ChatInterface.tsx
-│ │ └── Message.tsx
-│ ├── pages/
-│ │ └── ChatPage.tsx
-│ ├── services/
-│ │ └── websocket.ts
-│ └── types/
-│ └── ChatMessage.ts
-├── package.json
-└── tsconfig.json
-
 # Prerequisites
 
 - Node.js and npm
@@ -52,7 +22,7 @@ ai-chatbot/
 1. Clone the repository:
 
    ```
-   git clone https://github.com/yourusername/ai-chatbot.git
+   git clone https://github.com/bredmond1019/ai-chatbot.git
    cd ai-chatbot
    ```
 
